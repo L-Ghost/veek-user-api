@@ -49,6 +49,42 @@ class UsersController extends Controller
         ], 201);
     }
 
+    public function update(Request $request, $id)
+    {
+        $this->validateUser($request);
+
+        $user = User::find($id);
+        if ($user) {
+            if ($this->duplicatedEmail($user, $request->email)) {
+                return $this->createJsonResponse([
+                    'message' => 'There is another user already using this email'
+                ], 422);
+            }
+            $user->update($request->all());
+            return $this->createJsonResponse([
+                'message' => 'The user has been updated', 'id' => $id
+            ], 200);
+        }
+        return $this->doesNotExist($id);
+    }
+
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function destroy($id)
+    {
+        $user = User::find($id);
+        if ($user) {
+            $user->delete();
+            return $this->createJsonResponse([
+                'message' => 'The user has been deleted', 'id' => $id
+            ], 200);
+        }
+        return $this->doesNotExist($id);
+    }
+
+
     // validates data sent to server
     private function validateUser(Request $request)
     {
@@ -56,6 +92,24 @@ class UsersController extends Controller
             'name' => 'required',
             'email' => 'required|email'
         ]);
+    }
+
+    /**
+     * checks if another user is using the same email
+     * @param User $user
+     * @param $email
+     * @return bool
+     */
+    private function duplicatedEmail(User $user, $email)
+    {
+        $user2 = User::whereEmail($email)->first();
+        if ($user2) {
+            if ($user->id == $user2->id) {
+                return false;
+            }
+            return true; // there is another user
+        }
+        return false;
     }
 
     /**

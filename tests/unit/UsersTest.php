@@ -76,6 +76,79 @@ class UsersTest extends \TestCase
         $this->assertEquals('Luke Skywalker', $json->data[0]->name);
         $this->assertEquals('Han Solo', $json->data[1]->name);
         $this->assertEquals('Leia Skywalker', $json->data[2]->name);
+
+        // updating users
+        $this->put('/users/2', [
+            'name' => 'Han Solo', 'email' => 'han.solo@milleniumfalcon.com'
+        ])->seeJsonEquals([
+            'data' => [
+                'id' => '2',
+                'message' => 'The user has been updated'
+            ]
+        ])->assertResponseStatus(200);
+
+        $this->patch('/users/3', [
+            'name' => 'Leia Organa', 'email' => 'leia.organa@alderaan.com'
+        ])->seeJsonEquals([
+            'data' => [
+                'id' => '3',
+                'message' => 'The user has been updated'
+            ]
+        ])->assertResponseStatus(200);
+
+        // getting users again to see updates
+        $this->get('/users/2'
+        )->seeJson([
+            'name' => 'Han Solo', 'email' => 'han.solo@milleniumfalcon.com'
+        ])->assertResponseStatus(200);
+
+        $this->get('/users/3'
+        )->seeJson([
+            'name' => 'Leia Organa', 'email' => 'leia.organa@alderaan.com'
+        ])->assertResponseStatus(200);
+
+        // trying to update user email to email of previous user
+        $this->put('/users/3', [
+            'name' => 'Leia Organa', 'email' => 'luke.skywalker@tatooine.com'
+        ])->seeJsonEquals([
+            'data' => [
+                'message' => 'There is another user already using this email'
+            ]
+        ])->assertResponseStatus(422);
+
+        // updating non existing user
+        $this->put('/users/4', [
+            'name' => 'Yoda', 'email' => 'yoda@dagoba.com'
+        ])->seeJsonEquals([
+            'data' => [
+                'message' => 'The user with id 4 does not exist'
+            ]
+        ])->assertResponseStatus(404);
+
+        // deleting user
+        $this->delete('/users/1'
+        )->seeJson([
+            'data' => [
+                'id' => '1',
+                'message' => 'The user has been deleted'
+            ]
+        ])->assertResponseStatus(200);
+
+        // trying to get user after deletion
+        $this->get('/users/1'
+        )->seeJsonEquals([
+            'data' => [
+                'message' => 'The user with id 1 does not exist'
+            ]
+        ])->assertResponseStatus(404);
+
+        // trying to delete non existent user
+        $this->delete('/users/4'
+        )->seeJson([
+            'data' => [
+                'message' => 'The user with id 4 does not exist'
+            ]
+        ])->assertResponseStatus(404);
     }
 
 }
